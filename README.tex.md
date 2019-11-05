@@ -17,7 +17,7 @@ flag (if not then issue `git submodule update --init --recursive`).
 
 ### Layout
 
-All assignments will have a similar directory and file layout:
+All assignments will have a similar directory and file layout: 
 
     README.md
     CMakeLists.txt

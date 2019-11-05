@@ -100,7 +100,7 @@ While running, you can unpause/pause the simulation by pressing 's' and reset th
 
 In this assignment we will implement a physics simulation of an unconstrained rigid body in low gravity (e.g. space [donut](https://www.youtube.com/watch?v=8-4P1WPE-Qg) which you can interactively fling around the world. The goal is to get a good handle on the kinematics and dynamics of rigid body mechanics, which we will extend in the final assignment to handle collision resolution. Rigid bodies are the first type of object we will encounter that use a truly generalized, generalized coordinate (i.e not just the vertex positions of the mesh) and this complicates both their mathematical treatment and implementation. Let's dive right in!
 
-![Fun with interactive rigid bodies](images/rb_collision.gif)
+![Fun with interactive rigid bodies](images/rb_contact.gif)
 
 ## Resources
 

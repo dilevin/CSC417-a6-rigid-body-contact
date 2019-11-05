@@ -1,6 +1,6 @@
 ## Introduction
 
-In this final assignment we will finally consider how to model contact between objects. Specifically we will adapt the unconstrained rigid body simulation from the [previous assignment](https://github.com/dilevin/CSC2549-a5-rigid-bodies/) to support contact resolution by solving a Linear Complimentarity Problem.
+In this final assignment we will finally consider how to model contact between objects. Specifically we will adapt the unconstrained rigid body simulation from the [previous assignment](https://github.com/dilevin/CSC2549-a5-rigid-bodies/) to support contact resolution by solving a Linear Complimentarity Problem. 
 
 ### Prerequisite installation
 
@@ -11,13 +11,13 @@ Windows[³](#³windowsusers).
 We also assume that you have cloned this repository using the `--recursive`
 flag (if not then issue `git submodule update --init --recursive`). 
 
-**Note:** We only officially support these assignments on Ubuntu Linux 18.04 (the OS the teaching labs are running) and OSX 10.13 (the OS I use on my personal laptop). While they *should* work on other operating systems, we make no guarantees. 
+**Note:** We only officially support these assignments on Ubuntu Linux 18.04 (the OS the teaching labs are running) and OSX 10.13 (the OS I use on my personal laptop). While they *should* work on other operating systems, we make no guarantees.  
 
 **All grading of assignments is done on Linux 18.04**
 
 ### Layout
 
-All assignments will have a similar directory and file layout:
+All assignments will have a similar directory and file layout: 
 
     README.md
     CMakeLists.txt
@@ -101,6 +101,53 @@ In this assignment we will implement a physics simulation of an unconstrained ri
 
 ![Fun with interactive rigid bodies](images/rb_contact.gif)
 
+## Single Point Contact 
+
+## Multi Point Contact
+
+## The Signorini Conditions
+
+## The Velocity Level Signorini Conditions
+
+## Solving the Contact Problem using Projected Gauss Seidel 
+
 ## Resources
 
 This [paper](https://animation.rwth-aachen.de/media/papers/2012-EG-STAR_Rigid_Body_Dynamics.pdf) provides a detailed overview of rigid body simulation with contact.
+
+## Assignment Implementation
+
+In this assignment you will adapt your previous, unconstrained rigid body integrator to handle contact using the projected Gauss-Seidel algorithm. 
+
+### rodrigues.cpp
+
+**Use code from previous assignment.**
+
+### inverse_rigid_body.cpp
+
+A method to transform a point from world (deformed) space to body (undeformed) space. 
+
+### rigid_body_jacobian.cpp
+
+**Use code from previous assignment.**
+
+### inertia_matrix.cpp
+
+**Use code from previous assignment.**
+
+### collision_box_floor.cpp
+
+Detect contact between a triangle mesh and an arbitrarily positioned plane.
+
+### dV_spring_particle_particle_dq.cpp
+
+**Use code from previous assignment.**
+
+### exponential_euler_lcp_contact.h
+
+Implement velocity level collision resolution using progressive Gauss-Seidel and exponential Euler time integration. 
+
+### pick_nearest_vertices.cpp
+
+**Use code from previous assignment.**
+

@@ -104,3 +104,40 @@ In this assignment we will implement a physics simulation of an unconstrained ri
 ## Resources
 
 This [paper](https://animation.rwth-aachen.de/media/papers/2012-EG-STAR_Rigid_Body_Dynamics.pdf) provides a detailed overview of rigid body simulation with contact.
+
+## Assignment Implementation
+
+In this assignment you will adapt your previous, unconstrained rigid body integrator to handle contact using the projected Gauss-Seidel algorithm. 
+
+### rodrigues.cpp
+
+**Use code from previous assignment.**
+
+### inverse_rigid_body.cpp
+
+A method to transform a point from world (deformed) space to body (undeformed) space. 
+
+### rigid_body_jacobian.cpp
+
+**Use code from previous assignment.**
+
+### inertia_matrix.cpp
+
+**Use code from previous assignment.**
+
+### collision_box_floor.cpp
+
+Detect contact between a triangle mesh and an arbitrarily positioned plane.
+
+### dV_spring_particle_particle_dq.cpp
+
+**Use code from previous assignment.**
+
+### exponential_euler_lcp_contact.h
+
+Implement velocity level collision resolution using progressive Gauss-Seidel and exponential Euler time integration. 
+
+### pick_nearest_vertices.cpp
+
+**Use code from previous assignment.**
+

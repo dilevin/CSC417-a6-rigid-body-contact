@@ -101,6 +101,16 @@ In this assignment we will implement a physics simulation of an unconstrained ri
 
 ![Fun with interactive rigid bodies](images/rb_contact.gif)
 
+## Single Point Contact 
+
+## Multi Point Contact
+
+## The Signorini Conditions
+
+## The Velocity Level Signorini Conditions
+
+## Solving the Contact Problem using Projected Gauss Seidel 
+
 ## Resources
 
 This [paper](https://animation.rwth-aachen.de/media/papers/2012-EG-STAR_Rigid_Body_Dynamics.pdf) provides a detailed overview of rigid body simulation with contact.

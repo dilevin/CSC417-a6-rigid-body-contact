@@ -191,7 +191,44 @@ One thing that we know is <img src="/tex/c745b9b57c145ec5577b82542b2df546.svg?in
 
 This ensures <img src="/tex/c745b9b57c145ec5577b82542b2df546.svg?invert_in_darkmode&sanitize=true" align=middle width=10.57650494999999pt height=14.15524440000002pt/> is always greater than zero. It also ensures this only happens when the gap between contact points is <img src="/tex/29632a9bf827ce0200454dd32fc3be82.svg?invert_in_darkmode&sanitize=true" align=middle width=8.219209349999991pt height=21.18721440000001pt/> (because that's wht we solved for). Interestingly, due to the structure of the <img src="/tex/38f1e2a089e53d5c990a82f284948953.svg?invert_in_darkmode&sanitize=true" align=middle width=7.928075099999989pt height=22.831056599999986pt/> term, one only gets a positive <img src="/tex/c745b9b57c145ec5577b82542b2df546.svg?invert_in_darkmode&sanitize=true" align=middle width=10.57650494999999pt height=14.15524440000002pt/> when <img src="/tex/a89997741c635097e570db8a18d0bd29.svg?invert_in_darkmode&sanitize=true" align=middle width=140.50539855pt height=27.94539330000001pt/>. This means that contact forces are only applied when the objects are in contact or when one object is inside another (something which we should definitely correct for). Thus, this simple operation solves our single contact point LCP. Next we will use this as the building block of a multi-point contact handling algorithm.
 
-## Solving the Contact Problem using Projected Gauss Seidel 
+## Solving the Multi-Point Contact Problem using Projected Gauss Seidel 
+
+With multiple points things get a little trickier, we need to somehow satisfy all our complimentarity conditions at once. One way of doing this is to solve a [quadratic program](https://en.wikipedia.org/wiki/Quadratic_programming) at the velocity level. It turns out that certain LCPs (like the one we solve) define the optimality criteria for quadratic programs and solving one is the same as solving the other. For this project we will **not** solve a QP, instead we will use an iterative method ([projected Gauss-Seidel](http://www.optimization-online.org/DB_FILE/2007/06/1675.pdf)) to directly solve the LCP. This approach is extremely popular in physics-based animation and well worth understanding.
+
+Let's imagine we have <img src="/tex/0d8c9010b933336238a6fdbe69049339.svg?invert_in_darkmode&sanitize=true" align=middle width=59.497143749999985pt height=14.15524440000002pt/> contact points. We can augment our contact modified, rigid body update equation with them in the following manner:
+
+<p align="center"><img src="/tex/32d8d160fa450388dcaa7abd150d52d2.svg?invert_in_darkmode&sanitize=true" align=middle width=328.4389119pt height=47.3426514pt/></p> 
+
+We are going to use this equation to solve (and its counterpart for rigid bod <img src="/tex/61e84f854bc6258d4108d08d4c4a0852.svg?invert_in_darkmode&sanitize=true" align=middle width=13.29340979999999pt height=22.465723500000017pt/>) to solve the contact problem by iteratively updating our <img src="/tex/c745b9b57c145ec5577b82542b2df546.svg?invert_in_darkmode&sanitize=true" align=middle width=10.57650494999999pt height=14.15524440000002pt/>'s one-at-a-time. We begin with an initial guess for each <img src="/tex/c745b9b57c145ec5577b82542b2df546.svg?invert_in_darkmode&sanitize=true" align=middle width=10.57650494999999pt height=14.15524440000002pt/> (say <img src="/tex/29632a9bf827ce0200454dd32fc3be82.svg?invert_in_darkmode&sanitize=true" align=middle width=8.219209349999991pt height=21.18721440000001pt/>). The basic algorithm proceeds in the following manner (sorry about the non-processed latex, its a markdown thing that I cannot figure out).
+
+    iterations = 0
+    all $\alpha$ = 0
+
+    While i < max iterations
+        
+        For c = 0 to number of contacts - 1
+             
+             Compute $\delta_c$ 
+
+             Compute $\gamma_c$
+
+             Compute $alpha^{i}_c = \max(0,-frac{\gamma_c}{\delta_c})$
+
+        End
+    
+    End
+
+The remaining goal is to come up with formulas for <img src="/tex/a0f4dc8e2aa4dd40aaa873397e83c252.svg?invert_in_darkmode&sanitize=true" align=middle width=14.05829699999999pt height=22.831056599999986pt/> and <img src="/tex/5e607c9771c90017b79d70770f507a75.svg?invert_in_darkmode&sanitize=true" align=middle width=15.262999949999992pt height=14.15524440000002pt/>.  We do this in a Gauss-Seidel fashion, by dividing the contact forces into three groups -- (1) forces that have been updated this iteration, (2) forces that have yet to be updated and (3) the contact we are currently solving for. With this grouping we arrive at a formula for rigid body velocity that looks like this:
+
+<p align="center"><img src="/tex/2d93fd570f2d761909caf506dafed4e0.svg?invert_in_darkmode&sanitize=true" align=middle width=770.1171026999999pt height=73.83572955pt/></p> 
+
+Note that <img src="/tex/c7f539fb243cda00c7bf9f47bc19e3d7.svg?invert_in_darkmode&sanitize=true" align=middle width=42.687501449999985pt height=27.6567522pt/> and <img src="/tex/3fa3feb50e746a701fbb01c9e97b8d60.svg?invert_in_darkmode&sanitize=true" align=middle width=42.50485469999999pt height=27.6567522pt/> can be computed using the values of <img src="/tex/c745b9b57c145ec5577b82542b2df546.svg?invert_in_darkmode&sanitize=true" align=middle width=10.57650494999999pt height=14.15524440000002pt/> at this particular point in the contact point iteration. Solving for the updated <img src="/tex/971651e87c9aebb6ec102860c98ae161.svg?invert_in_darkmode&sanitize=true" align=middle width=16.390298099999992pt height=14.15524440000002pt/> is analogous to the single point case. For the contact, <img src="/tex/3e18a4a28fdee1744e5e3f79d13b9ff6.svg?invert_in_darkmode&sanitize=true" align=middle width=7.11380504999999pt height=14.15524440000002pt/>, we are currently visiting, we construct
+
+<p align="center"><img src="/tex/dd8618f5d568c7c6daf5937d96a4f009.svg?invert_in_darkmode&sanitize=true" align=middle width=561.6525667499999pt height=99.78292334999999pt/></p>
+
+We then compute <img src="/tex/1bd40ffd3f22f94d7a047f2d6999dabe.svg?invert_in_darkmode&sanitize=true" align=middle width=137.4183129pt height=37.80850590000001pt/>. The method gets its name due to the Gauss-Seidel like ordering of the <img src="/tex/c745b9b57c145ec5577b82542b2df546.svg?invert_in_darkmode&sanitize=true" align=middle width=10.57650494999999pt height=14.15524440000002pt/> updates and the projection of computed <img src="/tex/c745b9b57c145ec5577b82542b2df546.svg?invert_in_darkmode&sanitize=true" align=middle width=10.57650494999999pt height=14.15524440000002pt/>'s onto the set of positive, real numbers. 
+
+While this algorithm can be run to convergence, for interactive applications it is best to limit the number of outer iterations. In our case we will set the maximum number of outer iterations to be **10**.
 
 ## Assignment Implementation
 

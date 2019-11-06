@@ -228,11 +228,11 @@ Note that <img src="/tex/c7f539fb243cda00c7bf9f47bc19e3d7.svg?invert_in_darkmode
 
 We then compute <img src="/tex/1bd40ffd3f22f94d7a047f2d6999dabe.svg?invert_in_darkmode&sanitize=true" align=middle width=137.4183129pt height=37.80850590000001pt/>. The method gets its name due to the Gauss-Seidel like ordering of the <img src="/tex/c745b9b57c145ec5577b82542b2df546.svg?invert_in_darkmode&sanitize=true" align=middle width=10.57650494999999pt height=14.15524440000002pt/> updates and the projection of computed <img src="/tex/c745b9b57c145ec5577b82542b2df546.svg?invert_in_darkmode&sanitize=true" align=middle width=10.57650494999999pt height=14.15524440000002pt/>'s onto the set of positive, real numbers. 
 
-While this algorithm can be run to convergence, for interactive applications it is best to limit the number of outer iterations. In our case we will set the maximum number of outer iterations to be **10**.
+While this algorithm can be run to convergence, for interactive applications it is best to limit the number of outer iterations. In our case we will set the maximum number of outer iterations to be **10**. 
 
 ## Assignment Implementation
 
-In this assignment you will adapt your previous, unconstrained rigid body integrator to handle contact using the projected Gauss-Seidel algorithm. 
+In this assignment you will adapt your previous, unconstrained rigid body integrator to handle contact using the projected Gauss-Seidel algorithm. The notes above assume the general case in which contact forces act on two objects which are both dynamic. In the assignment your contacts will happen with a fixed ground plane which cannot move. The ground plane will not be a simulated object. Rather you will modify your projected Gauss-Seidel solver to handle such fixed objects. One way to formulate this modification is to treat static objects as having infinite mass. In this way the inverse mass matrix is zero, meaning applied forces have no effect. If the objects initial velocity is zero, it will always be zero. 
 
 ### rodrigues.cpp
 

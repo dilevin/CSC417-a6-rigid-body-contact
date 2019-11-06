@@ -228,11 +228,11 @@ $$ \begin{array}{r} \underbrace{\mathbf{n}_c^T\left(G\left(C^B\right)\left(^B\do
 
 We then compute $\alpha_c = \max\left(0, -\frac{\gamma_c}{\delta_c}\right)$. The method gets its name due to the Gauss-Seidel like ordering of the $\alpha$ updates and the projection of computed $\alpha$'s onto the set of positive, real numbers. 
 
-While this algorithm can be run to convergence, for interactive applications it is best to limit the number of outer iterations. In our case we will set the maximum number of outer iterations to be **10**.
+While this algorithm can be run to convergence, for interactive applications it is best to limit the number of outer iterations. In our case we will set the maximum number of outer iterations to be **10**. 
 
 ## Assignment Implementation
 
-In this assignment you will adapt your previous, unconstrained rigid body integrator to handle contact using the projected Gauss-Seidel algorithm. 
+In this assignment you will adapt your previous, unconstrained rigid body integrator to handle contact using the projected Gauss-Seidel algorithm. The notes above assume the general case in which contact forces act on two objects which are both dynamic. In the assignment your contacts will happen with a fixed ground plane which cannot move. The ground plane will not be a simulated object. Rather you will modify your projected Gauss-Seidel solver to handle such fixed objects. One way to formulate this modification is to treat static objects as having infinite mass. In this way the inverse mass matrix is zero, meaning applied forces have no effect. If the objects initial velocity is zero, it will always be zero. 
 
 ### rodrigues.cpp
 

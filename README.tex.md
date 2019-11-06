@@ -143,7 +143,6 @@ $$ \mathbf{f}_c = \sum_{z} \pm\mathbf{n}_z\alpha_z, $$
 
 where the $\pm$ depends on whether the object is $A$ or $B$ in the collision pair. Now $\mathbf{f}_c$ is a world space force in $\mathcal{R}^3$. We know that to convert this to a rigid body force (a torque and a center-of-mass force) we need to multiply by the transpose of the rigid body jacobian $G \in \mathcal{R}^{3 \times 6}$, evaluated at the appropriate undeformed point $\mathbf{Z}$. Here $\mathbf{Z}$ is the contact point $\mathbf{z}$ transformed from world into undeformed space (i.e you need to apply the inverse of the rigid body transform). This gives us the following constrained equations of motion
 
-
 $$ \begin{bmatrix} R\mathcal{I}R^T & 0 \\ 0 & I\end{bmatrix}\begin{bmatrix}\dot{\omega} \\ \ddot{p} \end{bmatrix} = \begin{bmatrix}\omega\times\left(R\mathcal{I}R^T\omega\right)+\tau_{ext} \\ \mathbf{f}_{ext}\end{bmatrix}  + \sum_{z} \pm G\left(\mathbf{Z}\left(\mathbf{z}\right)\right)^T\mathbf{n}_z\alpha_z$$
 
 which we can write in matrix form as 
@@ -157,6 +156,40 @@ $$\begin{array}{rcl} \mathbf{d} &\perp& \mathbf{\alpha} \\ \mathbf{\alpha} &>=& 
 where $\mathbf{d}$ returns a vector of distances, one for each contact and all inequalities apply component wise to the associated vectors. 
 
 ## The Velocity Level Signorini Conditions
+
+The system of equations and inequalities above is difficult to solve -- there is a lot of nonlinearity hidden in the calculation of the distance function. One way to side step this is to linearize the equations and solve them at the velocity level. Let's look at how this is done for a single contact. 
+
+We begin by computing $\frac{d}{dt}d\left(\mathbf{z}^A, \mathbf{z}^B\right)$ which can be conveniently computed as $\mathbf{n}^T\left(\dot{\mathbf{z}}^B - \dot{\mathbf{z}}^A\right)$. Rather than solve the nonlinear complimentarity problem above, we will solve the following [linear complimentarity problem (LCP)](https://en.wikipedia.org/wiki/Linear_complementarity_problem)
+
+$$\begin{array}{rcl} \mathbf{n}^T\left(\dot{\mathbf{z}}^B - \dot{\mathbf{z}}^A\right) &\perp& \mathbf{\alpha} \\ \mathbf{\alpha} &>=& 0 \\ \mathbf{n}^T\left(\dot{\mathbf{z}}^B - \dot{\mathbf{z}}^A\right) &>=& 0\end{array}$$
+
+Now we need a way to relate $\dot{\mathbf{z^A}}$ and $\dot{\mathbf{z^B}}$ to $\alpha$. Fortunately we already have such a set of equations, they are the discretized equations of motion from the [previous assignment](https://github.com/dilevin/CSC2549-a5-rigid-bodies/). We have already seen that, for the rigid body $A$.
+
+$$\underbrace{\begin{bmatrix} R\mathcal{I}R^T & 0 \\ 0 & I\end{bmatrix}}_{^AM}\underbrace{\begin{bmatrix}\omega \\ \dot{p} \end{bmatrix}^{t+1}}_{^A\dot{\mathbf{q}}} = \underbrace{\begin{bmatrix} R\mathcal{I}R^T & 0 \\ 0 & I\end{bmatrix}\begin{bmatrix}\omega \\ \dot{p} \end{bmatrix}^{t} + \Delta t\begin{bmatrix}\omega^{t}\times\left(R\mathcal{I}R^T\omega^{t}\right)+\tau_{ext} \\ \mathbf{f}_{ext}\end{bmatrix}}_{\mathbf{f}} - \Delta t G\left(Z^A\right)^T\mathbf{n}\alpha$$
+
+A little bit of rearranging gives 
+
+$$ \dot{\mathbf{q}}^{t+1} = \underbrace{\dot{\mathbf{q}}^{t+1}_{unc}}_{^AM^{-1}\mathbf{f}} - ^AM^{-1}\Delta t G\left(Z^A\right)^T\mathbf{n}\alpha $$ 
+
+where $\dot{\mathbf{q}}^{t+1}_{unc}$ is the unconstrained velocity at time $t+1$ (exactly what we computed for the last assignment). So now we see that, for a single contact there's a relatively simple relationship between the contact force magnitude, $\alpha$, and the resulting velocity.  Now we can use the rigid body jacobian to relate this to the velocity of the contact point, $\mathbf{z}^A$. At the end of each time step, the velocity of $\mathbf{z}^A$ will be
+
+$$ \dot{\mathbf{z}^A}  = G\left(Z^A\right)\dot{\mathbf{q}}^{t+1} = G\left(Z^A\right)\dot{\mathbf{q}}^{t+1}_{unc} -  G\left(Z^A\right)^AM^{-1}\Delta t G\left(Z^A\right)^T\mathbf{n}\alpha$$
+
+Formula's for rigid body $B$ are analogous except rather than subtracting contact forces, we **add** them (equal and opposite :) ). 
+
+Because we can now express $\dot{\mathbf{z^A}}$ and $\dot{\mathbf{z^B}}$ directly as functions of $\alpha$, and because these expressions encode the physical behaviour of our rigid body (via the equations of motion) we can now start to solve this complimentarity problem. Let's start by examining the inequality $\mathbf{n}^T\left(\dot{\mathbf{z}}^B - \dot{\mathbf{z}}^A\right) >= 0$. 
+
+We can now rephrase this inequality completely in terms of $\alpha$, which looks like this
+
+$$ \underbrace{\mathbf{n}^T\left(G\left(Z^B\right)^B\dot{\mathbf{q}}_{unc}-G\left(Z^A\right)^A\dot{\mathbf{q}}_{unc}\right)}_{\gamma} + \underbrace{\Delta t\left(\mathbf{n}^TG\left(Z^B\right)^BM^{-1}G\left(Z^B\right)^T\mathbf{n}+ \mathbf{n}^TG\left(Z^A\right)^AM^{-1}G\left(Z^A\right)^T\mathbf{n}\right)}_{\delta}\alpha >= 0 $$
+
+Let's ignore the inequality and just find $\alpha$ such that $\mathbf{n}^T\left(\dot{\mathbf{z}}^B - \dot{\mathbf{z}}^A\right) = 0$. This is given by $\alpha = -\frac{\gamma}{\delta}$. That's a very convenient way to find the magnitude of the contact force that will (linearly) pull our objects so that the distance between their contacting points is zero. The problem is we've ignored all the other parts of the LCP. 
+
+One thing that we know is $\alpha$ must always be greater than, or equal to $0$, and it can only be non-zero if $\mathbf{n}^T\left(\dot{\mathbf{z}}^B - \dot{\mathbf{z}}^A\right) = 0$. One obvious thing to is compute our final contact force magnitude as 
+
+$$ \alpha = \max\left(0, -\frac{\gamma}{\delta}\right) $$
+
+This ensures $\alpha$ is always greater than zero. It also ensures this only happens when the gap between contact points is $0$ (because that's wht we solved for). Interestingly, due to the structure of the $\delta$ term, one only gets a positive $\alpha$ when $\mathbf{n}^T\left(\dot{\mathbf{z}}^B - \dot{\mathbf{z}}^A\right) <= 0$. This means that contact forces are only applied when the objects are in contact or when one object is inside another (something which we should definitely correct for). Thus, this simple operation solves our single contact point LCP. Next we will use this as the building block of a multi-point contact handling algorithm.
 
 ## Solving the Contact Problem using Projected Gauss Seidel 
 

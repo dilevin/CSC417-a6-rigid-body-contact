@@ -191,7 +191,44 @@ $$ \alpha = \max\left(0, -\frac{\gamma}{\delta}\right) $$
 
 This ensures $\alpha$ is always greater than zero. It also ensures this only happens when the gap between contact points is $0$ (because that's wht we solved for). Interestingly, due to the structure of the $\delta$ term, one only gets a positive $\alpha$ when $\mathbf{n}^T\left(\dot{\mathbf{z}}^B - \dot{\mathbf{z}}^A\right) <= 0$. This means that contact forces are only applied when the objects are in contact or when one object is inside another (something which we should definitely correct for). Thus, this simple operation solves our single contact point LCP. Next we will use this as the building block of a multi-point contact handling algorithm.
 
-## Solving the Contact Problem using Projected Gauss Seidel 
+## Solving the Multi-Point Contact Problem using Projected Gauss Seidel 
+
+With multiple points things get a little trickier, we need to somehow satisfy all our complimentarity conditions at once. One way of doing this is to solve a [quadratic program](https://en.wikipedia.org/wiki/Quadratic_programming) at the velocity level. It turns out that certain LCPs (like the one we solve) define the optimality criteria for quadratic programs and solving one is the same as solving the other. For this project we will **not** solve a QP, instead we will use an iterative method ([projected Gauss-Seidel](http://www.optimization-online.org/DB_FILE/2007/06/1675.pdf)) to directly solve the LCP. This approach is extremely popular in physics-based animation and well worth understanding.
+
+Let's imagine we have $n_{contacts}$ contact points. We can augment our contact modified, rigid body update equation with them in the following manner:
+
+$$ ^A\dot{\mathbf{q}}^{t+1} = ^A\underbrace{\dot{\mathbf{q}}^{t+1}_{unc}} - \Delta t ^AM^{-1}\sum_{z=0}^{n_c-1}G\left(Z^A\right)^T\mathbf{n}_z\alpha_z $$ 
+
+We are going to use this equation to solve (and its counterpart for rigid bod $B$) to solve the contact problem by iteratively updating our $\alpha$'s one-at-a-time. We begin with an initial guess for each $\alpha$ (say $0$). The basic algorithm proceeds in the following manner (sorry about the non-processed latex, its a markdown thing that I cannot figure out).
+
+    iterations = 0
+    all $\alpha$ = 0
+
+    While i < max iterations
+        
+        For c = 0 to number of contacts - 1
+             
+             Compute $\delta_c$ 
+
+             Compute $\gamma_c$
+
+             Compute $alpha^{i}_c = \max(0,-frac{\gamma_c}{\delta_c})$
+
+        End
+    
+    End
+
+The remaining goal is to come up with formulas for $\delta_z$ and $\gamma_z$.  We do this in a Gauss-Seidel fashion, by dividing the contact forces into three groups -- (1) forces that have been updated this iteration, (2) forces that have yet to be updated and (3) the contact we are currently solving for. With this grouping we arrive at a formula for rigid body velocity that looks like this:
+
+$$ ^A\dot{\mathbf{q}}^{t+1} = ^A\underbrace{\dot{\mathbf{q}}^{t+1}_{unc}} - \underbrace{\Delta t ^AM^{-1}\sum_{z=0}^{c-1}G\left(Z^A\right)^T\mathbf{n}_z\alpha_z}_{^A\mathbf{b}^{i-1}} - \underbrace{\Delta t ^AM^{-1}\sum_{z=c+1}^{n_{contacts}-1}G\left(Z^A\right)^T\mathbf{n}_z\alpha_z}_{^A\mathbf{b}^{i+1}}  - \Delta t ^AM^{-1}G\left(C^A\right)^T\mathbf{n}_c\alpha_c$$ 
+
+Note that $^A\mathbf{b}^{i-1}$ and $^A\mathbf{b}^{i+1}$ can be computed using the values of $\alpha$ at this particular point in the contact point iteration. Solving for the updated $\alpha_c$ is analogous to the single point case. For the contact, $c$, we are currently visiting, we construct
+
+$$ \begin{array}{r} \underbrace{\mathbf{n}_c^T\left(G\left(C^B\right)\left(^B\dot{\mathbf{q}}_{unc} + ^B\mathbf{b}^{i-1} + ^B\mathbf{b}^{i+1}\right)-G\left(C^A\right)\left(^A\dot{\mathbf{q}}_{unc} - ^A\mathbf{b}^{i-1} - ^A\mathbf{b}^{i+1}\right)\right)}_{\gamma_c} + \\ \underbrace{\Delta t\left(\mathbf{n}_c^TG\left(C^B\right)^BM^{-1}G\left(C^B\right)^T\mathbf{n}_c+ \mathbf{n}_c^TG\left(C^A\right)^AM^{-1}G\left(C^A\right)^T\mathbf{n}_c\right)}_{\delta_c}\alpha_c >= 0 \end{array}$$
+
+We then compute $\alpha_c = \max\left(0, -\frac{\gamma_c}{\delta_c}\right)$. The method gets its name due to the Gauss-Seidel like ordering of the $\alpha$ updates and the projection of computed $\alpha$'s onto the set of positive, real numbers. 
+
+While this algorithm can be run to convergence, for interactive applications it is best to limit the number of outer iterations. In our case we will set the maximum number of outer iterations to be **10**.
 
 ## Assignment Implementation
 

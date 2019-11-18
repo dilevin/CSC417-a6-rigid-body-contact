@@ -165,7 +165,7 @@ We begin by computing <img src="/tex/b8fdcd052fc5f1361b8d834d4e1e5c61.svg?invert
 
 Now we need a way to relate <img src="/tex/5054c8a0cbac06dcee5cb54477c19a46.svg?invert_in_darkmode&sanitize=true" align=middle width=19.538760449999987pt height=33.089472899999976pt/> and <img src="/tex/dec6e10d5d5f1b585ca37c8ddf3daa5c.svg?invert_in_darkmode&sanitize=true" align=middle width=18.92003519999999pt height=33.089472899999976pt/> to <img src="/tex/c745b9b57c145ec5577b82542b2df546.svg?invert_in_darkmode&sanitize=true" align=middle width=10.57650494999999pt height=14.15524440000002pt/>. Fortunately we already have such a set of equations, they are the discretized equations of motion from the [previous assignment](https://github.com/dilevin/CSC2549-a5-rigid-bodies/). We have already seen that, for the rigid body <img src="/tex/53d147e7f3fe6e47ee05b88b166bd3f6.svg?invert_in_darkmode&sanitize=true" align=middle width=12.32879834999999pt height=22.465723500000017pt/>.
 
-<p align="center"><img src="/tex/15baae93e73989d35509a671925800ed.svg?invert_in_darkmode&sanitize=true" align=middle width=646.3435109999999pt height=68.52087660000001pt/></p>
+<p align="center"><img src="/tex/c7acaeb9412fa07632d90a2f0b24c807.svg?invert_in_darkmode&sanitize=true" align=middle width=660.7766121pt height=68.52087660000001pt/></p>
 
 A little bit of rearranging gives 
 

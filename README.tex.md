@@ -165,7 +165,7 @@ $$\begin{array}{rcl} \mathbf{n}^T\left(\dot{\mathbf{z}}^B - \dot{\mathbf{z}}^A\r
 
 Now we need a way to relate $\dot{\mathbf{z^A}}$ and $\dot{\mathbf{z^B}}$ to $\alpha$. Fortunately we already have such a set of equations, they are the discretized equations of motion from the [previous assignment](https://github.com/dilevin/CSC2549-a5-rigid-bodies/). We have already seen that, for the rigid body $A$.
 
-$$\underbrace{\begin{bmatrix} R\mathcal{I}R^T & 0 \\ 0 & mI\end{bmatrix}}_{^AM}\underbrace{\begin{bmatrix}\omega \\ \dot{p} \end{bmatrix}^{t+1}}_{^A\dot{\mathbf{q}}} = \underbrace{\begin{bmatrix} R\mathcal{I}R^T & 0 \\ 0 & I\end{bmatrix}\begin{bmatrix}\omega \\ \dot{p} \end{bmatrix}^{t} + \Delta t\begin{bmatrix}\omega^{t}\times\left(R\mathcal{I}R^T\omega^{t}\right)+\tau_{ext} \\ \mathbf{f}_{ext}\end{bmatrix}}_{\mathbf{f}} - \Delta t G\left(Z^A\right)^T\mathbf{n}\alpha$$
+$$\underbrace{\begin{bmatrix} R\mathcal{I}R^T & 0 \\ 0 & mI\end{bmatrix}}_{^AM}\underbrace{\begin{bmatrix}\omega \\ \dot{p} \end{bmatrix}^{t+1}}_{^A\dot{\mathbf{q}}} = \underbrace{\begin{bmatrix} R\mathcal{I}R^T & 0 \\ 0 & mI\end{bmatrix}\begin{bmatrix}\omega \\ \dot{p} \end{bmatrix}^{t} + \Delta t\begin{bmatrix}\omega^{t}\times\left(R\mathcal{I}R^T\omega^{t}\right)+\tau_{ext} \\ \mathbf{f}_{ext}\end{bmatrix}}_{\mathbf{f}} - \Delta t G\left(Z^A\right)^T\mathbf{n}\alpha$$
 
 A little bit of rearranging gives 
 

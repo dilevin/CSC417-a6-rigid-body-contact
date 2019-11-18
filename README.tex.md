@@ -143,11 +143,11 @@ $$ \mathbf{f}_c = \sum_{z} \pm\mathbf{n}_z\alpha_z, $$
 
 where the $\pm$ depends on whether the object is $A$ or $B$ in the collision pair. Now $\mathbf{f}_c$ is a world space force in $\mathcal{R}^3$. We know that to convert this to a rigid body force (a torque and a center-of-mass force) we need to multiply by the transpose of the rigid body jacobian $G \in \mathcal{R}^{3 \times 6}$, evaluated at the appropriate undeformed point $\mathbf{Z}$. Here $\mathbf{Z}$ is the contact point $\mathbf{z}$ transformed from world into undeformed space (i.e you need to apply the inverse of the rigid body transform). This gives us the following constrained equations of motion
 
-$$ \begin{bmatrix} R\mathcal{I}R^T & 0 \\ 0 & I\end{bmatrix}\begin{bmatrix}\dot{\omega} \\ \ddot{p} \end{bmatrix} = \begin{bmatrix}\omega\times\left(R\mathcal{I}R^T\omega\right)+\tau_{ext} \\ \mathbf{f}_{ext}\end{bmatrix}  + \sum_{z} \pm G\left(\mathbf{Z}\left(\mathbf{z}\right)\right)^T\mathbf{n}_z\alpha_z$$
+$$ \begin{bmatrix} R\mathcal{I}R^T & 0 \\ 0 & mI\end{bmatrix}\begin{bmatrix}\dot{\omega} \\ \ddot{p} \end{bmatrix} = \begin{bmatrix}\omega\times\left(R\mathcal{I}R^T\omega\right)+\tau_{ext} \\ \mathbf{f}_{ext}\end{bmatrix}  + \sum_{z} \pm G\left(\mathbf{Z}\left(\mathbf{z}\right)\right)^T\mathbf{n}_z\alpha_z$$
 
 which we can write in matrix form as 
 
-$$ \begin{bmatrix} R\mathcal{I}R^T & 0 \\ 0 & I\end{bmatrix}\begin{bmatrix}\dot{\omega} \\ \ddot{p} \end{bmatrix} = \begin{bmatrix}\omega\times\left(R\mathcal{I}R^T\omega\right)+\tau_{ext} \\ \mathbf{f}_{ext}\end{bmatrix}  + \mathbf{G}\mathbf{N}\mathbf{\alpha}, $$
+$$ \begin{bmatrix} R\mathcal{I}R^T & 0 \\ 0 & mI\end{bmatrix}\begin{bmatrix}\dot{\omega} \\ \ddot{p} \end{bmatrix} = \begin{bmatrix}\omega\times\left(R\mathcal{I}R^T\omega\right)+\tau_{ext} \\ \mathbf{f}_{ext}\end{bmatrix}  + \mathbf{G}\mathbf{N}\mathbf{\alpha}, $$
 
 where $\mathbf{G}$ is a $6 \times 3n_{contacts}$ matrix of stacked $G^T$ matrices, $\mathbf{N}$ is a $3n_{contacts}\times n_{contacts}$ matrix where each column contains a single contact normal, and $\mathbf{\alpha}$ is a $n_{contacts}$ vector of contact force magnitudes.  Using these matrix variables one can see that the remaining complimentarity conditions for this entire dynamic system become 
 

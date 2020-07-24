@@ -1,3 +1,5 @@
+[![](https://github.com/dilevin/CSC2549-a6-rigid-body-contact/workflows/Build-CSC2549-Assignment-Six/badge.svg)](https://github.com/dilevin/CSC2549-a6-rigid-body-contact/actions)
+
 ## Introduction
 
 In this final assignment we will finally consider how to model contact between objects. Specifically we will adapt the unconstrained rigid body simulation from the [previous assignment](https://github.com/dilevin/CSC2549-a5-rigid-bodies/) to support contact resolution by solving a Linear Complimentarity Problem. 

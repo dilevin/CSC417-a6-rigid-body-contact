@@ -1,0 +1,164 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <meta http-equiv="Content-Style-Type" content="text/css" />
+  <meta name="generator" content="pandoc" />
+  <title></title>
+  <style type="text/css">code{white-space: pre;}</style>
+  <script src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS_CHTML-full" type="text/javascript"></script>
+</head>
+<body>
+<h2 id="introduction">Introduction</h2>
+<p>In this final assignment we will finally consider how to model contact between objects. Specifically we will adapt the unconstrained rigid body simulation from the <a href="https://github.com/dilevin/CSC2549-a5-rigid-bodies/">previous assignment</a> to support contact resolution by solving a Linear Complimentarity Problem.</p>
+<h3 id="prerequisite-installation">Prerequisite installation</h3>
+<p>On all platforms, we will assume you have installed cmake and a modern c++ compiler on Mac OS X<a href="#¹macusers">¹</a>, Linux<a href="#²linuxusers">²</a>, or Windows<a href="#³windowsusers">³</a>.</p>
+<p>We also assume that you have cloned this repository using the <code>--recursive</code> flag (if not then issue <code>git submodule update --init --recursive</code>).</p>
+<p><strong>Note:</strong> We only officially support these assignments on Ubuntu Linux 18.04 (the OS the teaching labs are running) and OSX 10.13 (the OS I use on my personal laptop). While they <em>should</em> work on other operating systems, we make no guarantees.</p>
+<p><strong>All grading of assignments is done on Linux 18.04</strong></p>
+<h3 id="layout">Layout</h3>
+<p>All assignments will have a similar directory and file layout:</p>
+<pre><code>README.md
+CMakeLists.txt
+main.cpp
+assignment_setup.h
+include/
+  function1.h
+  function2.h
+  ...
+src/
+  function1.cpp
+  function2.cpp
+  ...
+data/
+  ...
+...</code></pre>
+<p>The <code>README.md</code> file will describe the background, contents and tasks of the assignment.</p>
+<p>The <code>CMakeLists.txt</code> file setups up the cmake build routine for this assignment.</p>
+<p>The <code>main.cpp</code> file will include the headers in the <code>include/</code> directory and link to the functions compiled in the <code>src/</code> directory. This file contains the <code>main</code> function that is executed when the program is run from the command line.</p>
+<p>The <code>include/</code> directory contains one file for each function that you will implement as part of the assignment.</p>
+<p>The <code>src/</code> directory contains <em>empty implementations</em> of the functions specified in the <code>include/</code> directory. This is where you will implement the parts of the assignment.</p>
+<p>The <code>data/</code> directory contains <em>sample</em> input data for your program. Keep in mind you should create your own test data to verify your program as you write it. It is not necessarily sufficient that your program <em>only</em> works on the given sample data.</p>
+<h2 id="compilation-for-debugging">Compilation for Debugging</h2>
+<p>This and all following assignments will follow a typical cmake/make build routine. Starting in this directory, issue:</p>
+<pre><code>mkdir build
+cd build
+cmake ..</code></pre>
+<p>If you are using Mac or Linux, then issue:</p>
+<pre><code>make</code></pre>
+<h2 id="compilation-for-testing">Compilation for Testing</h2>
+<p>Compiling the code in the above manner will yield working, but very slow executables. To run the code at full speed, you should compile it in release mode. Starting in the <strong>build directory</strong>, do the following:</p>
+<pre><code>cmake .. -DCMAKE_BUILD_TYPE=Release</code></pre>
+<p>Followed by:</p>
+<pre><code>make </code></pre>
+<p>Your code should now run significantly (sometimes as much as ten times) faster.</p>
+<p>If you are using Windows, then running <code>cmake ..</code> should have created a Visual Studio solution file called <code>a6-rigid-body-contact.sln</code> that you can open and build from there. Building the project will generate an .exe file.</p>
+<p>Why don't you try this right now?</p>
+<h2 id="execution">Execution</h2>
+<p>Once built, you can execute the assignment from inside the <code>build/</code> using</p>
+<pre><code>./a6-rigid-body-contact</code></pre>
+<p>While running, you can unpause/pause the simulation by pressing 's' and reset the position of the rigid body by pressing <code>r</code>.</p>
+<h2 id="background">Background</h2>
+<p>In this final assignment we will augment our previous rigid body integrator with a contact resolution mechanism based on the basic laws of contact mechanics. We will begin by describing the conditions to resolve single point contact, extend this to multi point contact and then to the rigid body regime. Finally we will explore a popular, iterative scheme for solving the contact equations, the projected Gauss-Seidel method.</p>
+<div class="figure">
+<img src="images/rb_contact.gif" alt="Fun with contacting rigid bodies" />
+<p class="caption">Fun with contacting rigid bodies</p>
+</div>
+<h2 id="resources">Resources</h2>
+<p>This <a href="https://animation.rwth-aachen.de/media/papers/2012-EG-STAR_Rigid_Body_Dynamics.pdf">paper</a> provides a detailed overview of rigid body simulation with contact.</p>
+<h2 id="single-point-contact">Single Point Contact</h2>
+<div class="figure">
+<img src="images/single_point_contact.gif" alt="single point contact" />
+<p class="caption">single point contact</p>
+</div>
+<p>The image above illustrates the most basic setup for a contact problem. It contains a single circular object (blue disk) resting on an infinite plane (black line). There is a single point of contact between these two objects (the contact point <span class="math inline">\(\mathbf{z}\)</span>) and associated with this contact point is a shared surface normal (<span class="math inline">\(\mathbf{n}\)</span>). Contact mechanics addresses the question of how two such physical objects will behave when they come into contact.</p>
+<p>Imagine the following scenario, our disk is falling under gravity and we've managed to take a snapshot of it just as it makes contact with our plane, but before the contact has any effect. In classical mechanics, no two pieces of matter can occupy the same region of space, our goal is to figure out how we can prevent that from happening -- how we can prevent the disc from falling through the plane.</p>
+<p>Since this is a physics problem we cannot directly manipulate the positions of the disk, rather all interactions happen through forces acting on either the volume (like gravity) or surface of both objects. This is a consequence of Newton's first law (objects in motion remain in motion unless influenced by an external force). We want to choose these forces so that the push the contacting objects away from each other (back into empty space, sometimes called the feasible space). To do this we are going to define a set of rules that will govern such contact mediated interactions.</p>
+<p>To begin, let's consider where our correcting force will come from. It arises as a consequence of Newton's third law, as the disc pushes on the floor, the floor pushes on the disc. From this arises our first rule of contact mechanics -- that the correcting force, actually the <strong>contact force</strong>, is only non-zero when objects are in contact.</p>
+<p>Now that we've defined when the contact force can be applied, we can further define its properties. The most important property of a contact force is that it cannot &quot;pull&quot; the contacting objects back together (its not sticky). This means that locally, the contact force needs to push the objects apart along the normal direction. Finally we need to ensure that the objects are no longer on a collision course after applying the contact force.</p>
+<p>Let's try to define these conditions mathematically for a single point contacting a plane. Furthermore let's assume the plane is fixed in space and cannot move no matter how hard the disk pushes on it. First, let's define our contact force. Since the force has to push our disk away from the floor, it has to have a component acting normal to the contact point. In fact, any force pushing in any other direction is doing nothing to resolve the potential contact. This implies that a reasonable definition of the contact force acting on the disk is <span class="math inline">\(\mathbf{f_z} = \mathbf{n}\alpha\)</span>, where <span class="math inline">\(\alpha\)</span> is a scalar. By definition this force acts normal to the contact surface. For the force to pull the disk towards the plane, it has to act in the opposite of the normal direction. To prevent this we can add the constraint <span class="math inline">\(\alpha &gt;= 0\)</span>. Next, we need to make sure this force is only applied when the disk is in contact with the object. Let's create a new function <span class="math inline">\(d\left(\mathbf{z}\right)\)</span> which computes the <a href="https://en.wikipedia.org/wiki/Signed_distance_function">signed distance</a> between the two objects at the contact point, <span class="math inline">\(\mathbf{z}\)</span>. If the objects are in contact then <span class="math inline">\(d=0\)</span> if the disk passes into the plane, <span class="math inline">\(d &lt; 0\)</span> and if the disc is not contacting the surface <span class="math inline">\(d&gt;0\)</span>. Let's assume we are constraining our problem such that <span class="math inline">\(d &gt;= 0\)</span>, then we can only apply the contact force when <span class="math inline">\(d = 0\)</span>. This means that for each contact point either <span class="math inline">\(d=0\)</span> or <span class="math inline">\(alpha = 0\)</span>. If we compute <span class="math inline">\(d\cdot \alpha\)</span> it will always be 0. This is called a <a href="https://en.wikipedia.org/wiki/Complementarity_theory">complimentarity</a> condition and it is a kind of orthogonality condition. Accordingly we write this as <span class="math inline">\(d \perp \alpha\)</span>. These collected constraints,</p>
+<p><span class="math display">\[\begin{array}{rcl} \mathbf{f_z} &amp;=&amp; \mathbf{n}\alpha \\ d &amp;\perp&amp; \alpha \\ \alpha &amp;&gt;=&amp; 0 \\ d &amp;&gt;=&amp; 0,\end{array}\]</span></p>
+<p>are a form of the <a href="https://en.wikipedia.org/wiki/Signorini_problem"><strong>Signorini Conditions</strong></a> which arise in all manner of contact problems.</p>
+<h2 id="multi-point-contact-and-the-equations-of-motion">Multi Point Contact and the Equations of Motion</h2>
+<div class="figure">
+<img src="images/multi_point_contact.gif" alt="multi point contact" />
+<p class="caption">multi point contact</p>
+</div>
+<p>Now that we have a mathematical model for a single contact point, let's extend it to multiple points. Let's imagine we have a <strong>collison detector</strong> which will check for collisions between all objects in our scene and return a list of collision points, collision normals and a pair of object identifiers for each contact. In the general case, when neither object in the contacting pair is fixed, we must consider the effect of the contact force on both participating bodies. For this <span class="math inline">\(z^{th}\)</span> contact we get</p>
+<p><span class="math display">\[\begin{array}{rcl} \mathbf{f^A_z} &amp;=&amp; -\mathbf{n}_z\alpha_z \\ \mathbf{f^B_z} &amp;=&amp; \mathbf{n}_z\alpha_z \\ d\left(\mathbf{z^A}, \mathbf{z^B}\right) &amp;\perp&amp; \alpha_z \\ \alpha_z &amp;&gt;=&amp; 0 \\ d\left(\mathbf{z^A}, \mathbf{z^B}\right) &amp;&gt;=&amp; 0,\end{array}\]</span></p>
+<p>where <span class="math inline">\(A\)</span> and <span class="math inline">\(B\)</span> index the two objects involved in this collision. <span class="math inline">\(d\left(\mathbf{z_A}, \mathbf{z_B}\right)\)</span> measures the distance, in world space, between the contact point on object <span class="math inline">\(A\)</span> and the contact point on object <span class="math inline">\(B\)</span>. As we move object <span class="math inline">\(A\)</span> and <span class="math inline">\(B\)</span> around to try and solve this problem,the contact point <span class="math inline">\(z\)</span> will no longer be a single point, rather it will become two points, one attached to each object. Typically we compute this by mapping the original <span class="math inline">\(z\)</span> to the undeformed space of each object, then mapping it back to the world space as the objects move. We compute <span class="math inline">\(d\)</span> on these new, separate points. Finally, notice that our contact forces are setup to ensure that an equal and opposite force is applied to each object at the contact point. Each contact introduces a new set of forces on some object <span class="math inline">\(A\)</span> and some object <span class="math inline">\(B\)</span>, along with the appropriate complimentarity constraints.</p>
+<h2 id="the-equations-of-motion-for-a-single-rigid-body-with-multiple-contacts">The Equations of Motion for a Single Rigid Body with Multiple Contacts</h2>
+<p>Now that we have a mathematical model for contact forces, we need to combine them with our equations of motion. Since we are simulating rigid bodies, those equations will be the Newton-Euler Equations. Let's make life a little bit easier by considering only a single rigid body, colliding with fixed objects in the scene. The equations of motion tell us that inertial forces need to balance all other external forces acting on the object. The sum of all contact forces acting on a single rigid body is given by</p>
+<p><span class="math display">\[ \mathbf{f}_c = \sum_{z} \pm\mathbf{n}_z\alpha_z, \]</span></p>
+<p>where the <span class="math inline">\(\pm\)</span> depends on whether the object is <span class="math inline">\(A\)</span> or <span class="math inline">\(B\)</span> in the collision pair. Now <span class="math inline">\(\mathbf{f}_c\)</span> is a world space force in <span class="math inline">\(\mathcal{R}^3\)</span>. We know that to convert this to a rigid body force (a torque and a center-of-mass force) we need to multiply by the transpose of the rigid body jacobian <span class="math inline">\(G \in \mathcal{R}^{3 \times 6}\)</span>, evaluated at the appropriate undeformed point <span class="math inline">\(\mathbf{Z}\)</span>. Here <span class="math inline">\(\mathbf{Z}\)</span> is the contact point <span class="math inline">\(\mathbf{z}\)</span> transformed from world into undeformed space (i.e you need to apply the inverse of the rigid body transform). This gives us the following constrained equations of motion</p>
+<p><span class="math display">\[ \begin{bmatrix} R\mathcal{I}R^T &amp; 0 \\ 0 &amp; mI\end{bmatrix}\begin{bmatrix}\dot{\omega} \\ \ddot{p} \end{bmatrix} = \begin{bmatrix}\omega\times\left(R\mathcal{I}R^T\omega\right)+\tau_{ext} \\ \mathbf{f}_{ext}\end{bmatrix}  + \sum_{z} \pm G\left(\mathbf{Z}\left(\mathbf{z}\right)\right)^T\mathbf{n}_z\alpha_z\]</span></p>
+<p>which we can write in matrix form as</p>
+<p><span class="math display">\[ \begin{bmatrix} R\mathcal{I}R^T &amp; 0 \\ 0 &amp; mI\end{bmatrix}\begin{bmatrix}\dot{\omega} \\ \ddot{p} \end{bmatrix} = \begin{bmatrix}\omega\times\left(R\mathcal{I}R^T\omega\right)+\tau_{ext} \\ \mathbf{f}_{ext}\end{bmatrix}  + \mathbf{G}\mathbf{N}\mathbf{\alpha}, \]</span></p>
+<p>where <span class="math inline">\(\mathbf{G}\)</span> is a <span class="math inline">\(6 \times 3n_{contacts}\)</span> matrix of stacked <span class="math inline">\(G^T\)</span> matrices, <span class="math inline">\(\mathbf{N}\)</span> is a <span class="math inline">\(3n_{contacts}\times n_{contacts}\)</span> matrix where each column contains a single contact normal, and <span class="math inline">\(\mathbf{\alpha}\)</span> is a <span class="math inline">\(n_{contacts}\)</span> vector of contact force magnitudes. Using these matrix variables one can see that the remaining complimentarity conditions for this entire dynamic system become</p>
+<p><span class="math display">\[\begin{array}{rcl} \mathbf{d} &amp;\perp&amp; \mathbf{\alpha} \\ \mathbf{\alpha} &amp;&gt;=&amp; 0 \\ \mathbf{d} &amp;&gt;=&amp; 0\end{array}\]</span></p>
+<p>where <span class="math inline">\(\mathbf{d}\)</span> returns a vector of distances, one for each contact and all inequalities apply component wise to the associated vectors.</p>
+<h2 id="the-velocity-level-signorini-conditions">The Velocity Level Signorini Conditions</h2>
+<p>The system of equations and inequalities above is difficult to solve -- there is a lot of nonlinearity hidden in the calculation of the distance function. One way to side step this is to linearize the equations and solve them at the velocity level. Let's look at how this is done for a single contact.</p>
+<p>We begin by computing <span class="math inline">\(\frac{d}{dt}d\left(\mathbf{z}^A, \mathbf{z}^B\right)\)</span> which can be conveniently computed as <span class="math inline">\(\mathbf{n}^T\left(\dot{\mathbf{z}}^B - \dot{\mathbf{z}}^A\right)\)</span>. Rather than solve the nonlinear complimentarity problem above, we will solve the following <a href="https://en.wikipedia.org/wiki/Linear_complementarity_problem">linear complimentarity problem (LCP)</a></p>
+<p><span class="math display">\[\begin{array}{rcl} \mathbf{n}^T\left(\dot{\mathbf{z}}^B - \dot{\mathbf{z}}^A\right) &amp;\perp&amp; \mathbf{\alpha} \\ \mathbf{\alpha} &amp;&gt;=&amp; 0 \\ \mathbf{n}^T\left(\dot{\mathbf{z}}^B - \dot{\mathbf{z}}^A\right) &amp;&gt;=&amp; 0\end{array}\]</span></p>
+<p>Now we need a way to relate <span class="math inline">\(\dot{\mathbf{z^A}}\)</span> and <span class="math inline">\(\dot{\mathbf{z^B}}\)</span> to <span class="math inline">\(\alpha\)</span>. Fortunately we already have such a set of equations, they are the discretized equations of motion from the <a href="https://github.com/dilevin/CSC2549-a5-rigid-bodies/">previous assignment</a>. We have already seen that, for the rigid body <span class="math inline">\(A\)</span>.</p>
+<p><span class="math display">\[\underbrace{\begin{bmatrix} R\mathcal{I}R^T &amp; 0 \\ 0 &amp; mI\end{bmatrix}}_{^AM}\underbrace{\begin{bmatrix}\omega \\ \dot{p} \end{bmatrix}^{t+1}}_{^A\dot{\mathbf{q}}} = \underbrace{\begin{bmatrix} R\mathcal{I}R^T &amp; 0 \\ 0 &amp; mI\end{bmatrix}\begin{bmatrix}\omega \\ \dot{p} \end{bmatrix}^{t} + \Delta t\begin{bmatrix}\omega^{t}\times\left(R\mathcal{I}R^T\omega^{t}\right)+\tau_{ext} \\ \mathbf{f}_{ext}\end{bmatrix}}_{\mathbf{f}} - \Delta t G\left(Z^A\right)^T\mathbf{n}\alpha\]</span></p>
+<p>A little bit of rearranging gives</p>
+<p><span class="math display">\[ \dot{\mathbf{q}}^{t+1} = \underbrace{\dot{\mathbf{q}}^{t+1}_{unc}}_{^AM^{-1}\mathbf{f}} - ^AM^{-1}\Delta t G\left(Z^A\right)^T\mathbf{n}\alpha \]</span></p>
+<p>where <span class="math inline">\(\dot{\mathbf{q}}^{t+1}_{unc}\)</span> is the unconstrained velocity at time <span class="math inline">\(t+1\)</span> (exactly what we computed for the last assignment). So now we see that, for a single contact there's a relatively simple relationship between the contact force magnitude, <span class="math inline">\(\alpha\)</span>, and the resulting velocity. Now we can use the rigid body jacobian to relate this to the velocity of the contact point, <span class="math inline">\(\mathbf{z}^A\)</span>. At the end of each time step, the velocity of <span class="math inline">\(\mathbf{z}^A\)</span> will be</p>
+<p><span class="math display">\[ \dot{\mathbf{z}^A}  = G\left(Z^A\right)\dot{\mathbf{q}}^{t+1} = G\left(Z^A\right)\dot{\mathbf{q}}^{t+1}_{unc} -  G\left(Z^A\right)^AM^{-1}\Delta t G\left(Z^A\right)^T\mathbf{n}\alpha\]</span></p>
+<p>Formula's for rigid body <span class="math inline">\(B\)</span> are analogous except rather than subtracting contact forces, we <strong>add</strong> them (equal and opposite :) ).</p>
+<p>Because we can now express <span class="math inline">\(\dot{\mathbf{z^A}}\)</span> and <span class="math inline">\(\dot{\mathbf{z^B}}\)</span> directly as functions of <span class="math inline">\(\alpha\)</span>, and because these expressions encode the physical behaviour of our rigid body (via the equations of motion) we can now start to solve this complimentarity problem. Let's start by examining the inequality <span class="math inline">\(\mathbf{n}^T\left(\dot{\mathbf{z}}^B - \dot{\mathbf{z}}^A\right) &gt;= 0\)</span>.</p>
+<p>We can now rephrase this inequality completely in terms of <span class="math inline">\(\alpha\)</span>, which looks like this</p>
+<p><span class="math display">\[ \underbrace{\mathbf{n}^T\left(G\left(Z^B\right)^B\dot{\mathbf{q}}_{unc}-G\left(Z^A\right)^A\dot{\mathbf{q}}_{unc}\right)}_{\gamma} + \underbrace{\Delta t\left(\mathbf{n}^TG\left(Z^B\right)^BM^{-1}G\left(Z^B\right)^T\mathbf{n}+ \mathbf{n}^TG\left(Z^A\right)^AM^{-1}G\left(Z^A\right)^T\mathbf{n}\right)}_{\delta}\alpha &gt;= 0 \]</span></p>
+<p>Let's ignore the inequality and just find <span class="math inline">\(\alpha\)</span> such that <span class="math inline">\(\mathbf{n}^T\left(\dot{\mathbf{z}}^B - \dot{\mathbf{z}}^A\right) = 0\)</span>. This is given by <span class="math inline">\(\alpha = -\frac{\gamma}{\delta}\)</span>. That's a very convenient way to find the magnitude of the contact force that will (linearly) pull our objects so that the distance between their contacting points is zero. The problem is we've ignored all the other parts of the LCP.</p>
+<p>One thing that we know is <span class="math inline">\(\alpha\)</span> must always be greater than, or equal to <span class="math inline">\(0\)</span>, and it can only be non-zero if <span class="math inline">\(\mathbf{n}^T\left(\dot{\mathbf{z}}^B - \dot{\mathbf{z}}^A\right) = 0\)</span>. One obvious thing to is compute our final contact force magnitude as</p>
+<p><span class="math display">\[ \alpha = \max\left(0, -\frac{\gamma}{\delta}\right) \]</span></p>
+<p>This ensures <span class="math inline">\(\alpha\)</span> is always greater than zero. It also ensures this only happens when the gap between contact points is <span class="math inline">\(0\)</span> (because that's wht we solved for). Interestingly, due to the structure of the <span class="math inline">\(\delta\)</span> term, one only gets a positive <span class="math inline">\(\alpha\)</span> when <span class="math inline">\(\mathbf{n}^T\left(\dot{\mathbf{z}}^B - \dot{\mathbf{z}}^A\right) &lt;= 0\)</span>. This means that contact forces are only applied when the objects are in contact or when one object is inside another (something which we should definitely correct for). Thus, this simple operation solves our single contact point LCP. Next we will use this as the building block of a multi-point contact handling algorithm.</p>
+<h2 id="solving-the-multi-point-contact-problem-using-projected-gauss-seidel">Solving the Multi-Point Contact Problem using Projected Gauss Seidel</h2>
+<p>With multiple points things get a little trickier, we need to somehow satisfy all our complimentarity conditions at once. One way of doing this is to solve a <a href="https://en.wikipedia.org/wiki/Quadratic_programming">quadratic program</a> at the velocity level. It turns out that certain LCPs (like the one we solve) define the optimality criteria for quadratic programs and solving one is the same as solving the other. For this project we will <strong>not</strong> solve a QP, instead we will use an iterative method (<a href="http://www.optimization-online.org/DB_FILE/2007/06/1675.pdf">projected Gauss-Seidel</a>) to directly solve the LCP. This approach is extremely popular in physics-based animation and well worth understanding.</p>
+<p>Let's imagine we have <span class="math inline">\(n_{contacts}\)</span> contact points. We can augment our contact modified, rigid body update equation with them in the following manner:</p>
+<p><span class="math display">\[ ^A\dot{\mathbf{q}}^{t+1} = ^A\underbrace{\dot{\mathbf{q}}^{t+1}_{unc}} - \Delta t ^AM^{-1}\sum_{z=0}^{n_c-1}G\left(Z^A\right)^T\mathbf{n}_z\alpha_z \]</span></p>
+<p>We are going to use this equation to solve (and its counterpart for rigid bod <span class="math inline">\(B\)</span>) to solve the contact problem by iteratively updating our <span class="math inline">\(\alpha\)</span>'s one-at-a-time. We begin with an initial guess for each <span class="math inline">\(\alpha\)</span> (say <span class="math inline">\(0\)</span>). The basic algorithm proceeds in the following manner (sorry about the non-processed latex, its a markdown thing that I cannot figure out).</p>
+<pre><code>iterations = 0
+all $\alpha$ = 0
+
+While i &lt; max iterations
+    
+    For c = 0 to number of contacts - 1
+         
+         Compute $\delta_c$ 
+
+         Compute $\gamma_c$
+
+         Compute $alpha^{i}_c = \max(0,-frac{\gamma_c}{\delta_c})$
+
+    End
+
+End</code></pre>
+<p>The remaining goal is to come up with formulas for <span class="math inline">\(\delta_z\)</span> and <span class="math inline">\(\gamma_z\)</span>. We do this in a Gauss-Seidel fashion, by dividing the contact forces into three groups -- (1) forces that have been updated this iteration, (2) forces that have yet to be updated and (3) the contact we are currently solving for. With this grouping we arrive at a formula for rigid body velocity that looks like this:</p>
+<p><span class="math display">\[ ^A\dot{\mathbf{q}}^{t+1} = ^A\underbrace{\dot{\mathbf{q}}^{t+1}_{unc}} - \underbrace{\Delta t ^AM^{-1}\sum_{z=0}^{c-1}G\left(Z^A\right)^T\mathbf{n}_z\alpha_z}_{^A\mathbf{b}^{i-1}} - \underbrace{\Delta t ^AM^{-1}\sum_{z=c+1}^{n_{contacts}-1}G\left(Z^A\right)^T\mathbf{n}_z\alpha_z}_{^A\mathbf{b}^{i+1}}  - \Delta t ^AM^{-1}G\left(C^A\right)^T\mathbf{n}_c\alpha_c\]</span></p>
+<p>Note that <span class="math inline">\(^A\mathbf{b}^{i-1}\)</span> and <span class="math inline">\(^A\mathbf{b}^{i+1}\)</span> can be computed using the values of <span class="math inline">\(\alpha\)</span> at this particular point in the contact point iteration. Solving for the updated <span class="math inline">\(\alpha_c\)</span> is analogous to the single point case. For the contact, <span class="math inline">\(c\)</span>, we are currently visiting, we construct</p>
+<p><span class="math display">\[ \begin{array}{r} \underbrace{\mathbf{n}_c^T\left(G\left(C^B\right)\left(^B\dot{\mathbf{q}}_{unc} + ^B\mathbf{b}^{i-1} + ^B\mathbf{b}^{i+1}\right)-G\left(C^A\right)\left(^A\dot{\mathbf{q}}_{unc} - ^A\mathbf{b}^{i-1} - ^A\mathbf{b}^{i+1}\right)\right)}_{\gamma_c} + \\ \underbrace{\Delta t\left(\mathbf{n}_c^TG\left(C^B\right)^BM^{-1}G\left(C^B\right)^T\mathbf{n}_c+ \mathbf{n}_c^TG\left(C^A\right)^AM^{-1}G\left(C^A\right)^T\mathbf{n}_c\right)}_{\delta_c}\alpha_c &gt;= 0 \end{array}\]</span></p>
+<p>We then compute <span class="math inline">\(\alpha_c = \max\left(0, -\frac{\gamma_c}{\delta_c}\right)\)</span>. The method gets its name due to the Gauss-Seidel like ordering of the <span class="math inline">\(\alpha\)</span> updates and the projection of computed <span class="math inline">\(\alpha\)</span>'s onto the set of positive, real numbers.</p>
+<p>While this algorithm can be run to convergence, for interactive applications it is best to limit the number of outer iterations. In our case we will set the maximum number of outer iterations to be <strong>10</strong>.</p>
+<h2 id="assignment-implementation">Assignment Implementation</h2>
+<p>In this assignment you will adapt your previous, unconstrained rigid body integrator to handle contact using the projected Gauss-Seidel algorithm. The notes above assume the general case in which contact forces act on two objects which are both dynamic. In the assignment your contacts will happen with a fixed ground plane which cannot move. The ground plane will not be a simulated object. Rather you will modify your projected Gauss-Seidel solver to handle such fixed objects. One way to formulate this modification is to treat static objects as having infinite mass. In this way the inverse mass matrix is zero, meaning applied forces have no effect. If the objects initial velocity is zero, it will always be zero.</p>
+<h3 id="rodrigues.cpp">rodrigues.cpp</h3>
+<p><strong>Use code from previous assignment.</strong></p>
+<h3 id="inverse_rigid_body.cpp">inverse_rigid_body.cpp</h3>
+<p>A method to transform a point from world (deformed) space to body (undeformed) space.</p>
+<h3 id="rigid_body_jacobian.cpp">rigid_body_jacobian.cpp</h3>
+<p><strong>Use code from previous assignment.</strong></p>
+<h3 id="inertia_matrix.cpp">inertia_matrix.cpp</h3>
+<p><strong>Use code from previous assignment.</strong></p>
+<h3 id="collision_box_floor.cpp">collision_box_floor.cpp</h3>
+<p>Detect contact between a triangle mesh and an arbitrarily positioned plane.</p>
+<h3 id="dv_spring_particle_particle_dq.cpp">dV_spring_particle_particle_dq.cpp</h3>
+<p><strong>Use code from previous assignment.</strong></p>
+<h3 id="exponential_euler_lcp_contact.h">exponential_euler_lcp_contact.h</h3>
+<p>Implement velocity level collision resolution using progressive Gauss-Seidel and exponential Euler time integration.</p>
+<h3 id="pick_nearest_vertices.cpp">pick_nearest_vertices.cpp</h3>
+<p><strong>Use code from previous assignment.</strong></p>
+</body>
+</html>
